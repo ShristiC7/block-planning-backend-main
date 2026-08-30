@@ -1,0 +1,440 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    // Auth Guard
+    (function() {
+      if (!sessionStorage.getItem('rt_auth')) {
+        try { var s = localStorage.getItem('rt_auth'); if (s) { sessionStorage.setItem('rt_auth', s); return; } } catch(e) {}
+        window.location.replace('login.html');
+      }
+    })();
+  </script>
+  <script src="railway_engine.js"></script>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>RailTwin AI — Asset Digital Twin Explorer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+  <style>
+    @layer base {
+      html, body { margin:0; padding:0; background-color:#10131a; }
+      body { overscroll-behavior:none; overflow-x:hidden; }
+      main > :first-child { margin-top:0!important; }
+      main > :last-child { margin-bottom:0!important; }
+    }
+    ::-webkit-scrollbar { display:none; }
+    .glass-panel { background: rgba(29,32,39,0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+    .kpi-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
+  
+    /* === GOVERNMENT RAILWAY THEME OVERRIDE === */
+    html,body{background:#F5F7F9 !important;color:#1A2B45 !important;}
+    /* Sidebar */
+    aside{width:220px !important;background:#12355B !important;border-right:1px solid rgba(255,255,255,0.08) !important;padding:0 !important;align-items:stretch !important;}
+    aside nav{gap:0 !important;flex:1;padding-top:8px;}
+    aside nav a{padding:9px 14px !important;border-radius:0 !important;display:flex !important;flex-direction:row !important;align-items:center !important;gap:10px !important;width:100% !important;color:rgba(255,255,255,0.82) !important;font-size:12.5px !important;font-weight:500 !important;font-family:var(--rt-font-body) !important;border-left:3px solid transparent !important;text-decoration:none;transition:background 0.15s,color 0.15s !important;box-shadow:none !important;background:transparent !important;}
+    aside nav a:hover{background:rgba(255,255,255,0.08) !important;color:#fff !important;}
+    aside nav a[aria-current="page"],aside nav a.active{background:rgba(0,90,156,0.40) !important;border-left-color:#C49A3A !important;color:#fff !important;font-weight:600 !important;}
+    aside nav a .material-symbols-outlined{font-size:18px !important;flex-shrink:0;opacity:0.82;}
+    aside nav a[aria-current="page"] .material-symbols-outlined{color:#C49A3A !important;opacity:1;}
+    /* Layout */
+    .pl-20,.pl-64,[class*="ml-64"]{padding-left:220px !important;}
+    /* Header/topbar */
+    header{background:#12355B !important;border-bottom:2px solid #C49A3A !important;backdrop-filter:none !important;}
+    /* Surface colors -> white/light */
+    [class*="bg-surface-container-lowest"]{background:#EEF2F5 !important;}
+    [class*="bg-surface-container-low"]{background:#F8FAFC !important;}
+    [class*="bg-surface-container-high"]{background:#FFFFFF !important;}
+    [class*="bg-surface-container-highest"]{background:#F0F3F6 !important;}
+    [class*="bg-surface-container"]:not([class*="bg-surface-container-l"]):not([class*="bg-surface-container-h"]){background:#FFFFFF !important;}
+    [class*="bg-surface-dim"],[class*="bg-background"],[class*="bg-surface"]:not([class*="bg-surface-c"]){background:#F5F7F9 !important;}
+    [class*="bg-surface-bright"]{background:#FFFFFF !important;}
+    /* Text */
+    [class*="text-on-surface"]:not([class*="text-on-surface-variant"]){color:#1A2B45 !important;}
+    [class*="text-on-surface-variant"]{color:#4A5E73 !important;}
+    [class*="text-on-background"]{color:#1A2B45 !important;}
+    [class*="text-primary"]{color:#005A9C !important;}
+    [class*="text-secondary"]{color:#1D5FA8 !important;}
+    [class*="text-tertiary"]{color:#B45309 !important;}
+    [class*="text-error"]{color:#B3261E !important;}
+    [class*="text-outline"]:not([class*="text-outline-variant"]){color:#7A8EA0 !important;}
+    [class*="text-outline-variant"]{color:#B8C4D2 !important;}
+    [class*="text-on-primary"]{color:#FFFFFF !important;}
+    /* Primary backgrounds */
+    [class*="bg-primary"]:not([class*="bg-primary/"]):not([class*="bg-primary-fixed"]):not([class*="bg-primary-c"]){background:#005A9C !important;}
+    [class*="bg-primary/10"]{background:rgba(0,90,156,0.08) !important;}
+    [class*="bg-primary/20"]{background:rgba(0,90,156,0.12) !important;}
+    [class*="bg-error"]{background:rgba(179,38,30,0.08) !important;}
+    [class*="bg-secondary-container"]{background:rgba(29,95,168,0.10) !important;}
+    [class*="bg-tertiary-container"]{background:rgba(180,83,9,0.08) !important;}
+    /* Borders */
+    [class*="border-outline-variant"]{border-color:#D0D7E3 !important;}
+    [class*="border-outline"]:not([class*="border-outline-variant"]){border-color:#B8C4D2 !important;}
+    [class*="border-primary"]{border-color:#005A9C !important;}
+    [class*="border-error"]{border-color:#B3261E !important;}
+    /* Radius */
+    [class*="rounded-2xl"]{border-radius:10px !important;}
+    [class*="rounded-xl"]{border-radius:8px !important;}
+    [class*="rounded-full"]{border-radius:20px !important;}
+    /* Shadows */
+    .shadow-md,.shadow-lg,.shadow-xl,.shadow-2xl{box-shadow:0 1px 4px rgba(18,53,91,0.08),0 2px 8px rgba(18,53,91,0.05) !important;}
+    /* Typography */
+    h1,h2,h3,h4{color:#1A2B45 !important;}
+    [class*="text-display-lg"]{color:#12355B !important;font-size:24px !important;}
+    [class*="text-headline-md"]{color:#1A2B45 !important;}
+    /* Gradient bleeds */
+    .bg-gradient-to-r:not(aside):not(header){background:transparent !important;}
+    /* Scrollbar */
+    ::-webkit-scrollbar-thumb{background:#C0CAD4 !important;}
+    ::-webkit-scrollbar-track{background:#EEF2F5 !important;}
+    /* Backdrop blur — remove */
+    .backdrop-blur-xl,.backdrop-blur-md,.backdrop-blur-sm{backdrop-filter:none !important;}
+    /* Animated glow blobs — hide */
+    .blur-\[140px\],.blur-\[120px\]{display:none !important;}
+    /* Buttons */
+    button[class*="bg-primary"]:not([class*="bg-primary/"]),a[class*="bg-primary"]:not([class*="bg-primary/"]){background:#005A9C !important;color:#fff !important;}
+    button[class*="bg-primary"]:hover,a[class*="bg-primary"]:hover{background:#004A87 !important;}
+    /* Input fields */
+    input,select,textarea{background:#FFFFFF !important;border-color:#D0D7E3 !important;color:#1A2B45 !important;}
+    input:focus,select:focus,textarea:focus{border-color:#005A9C !important;box-shadow:0 0 0 3px rgba(0,90,156,0.10) !important;}
+    /* Table heads */
+    thead,thead tr{background:#12355B !important;color:#FFFFFF !important;}
+    thead th{color:#FFFFFF !important;}
+    /* Glow effects — remove */
+    [class*="shadow-\[0_0"]{box-shadow:0 1px 3px rgba(18,53,91,0.08) !important;}
+    /* Animated elements — calm down */
+    .animate-ping{animation:none !important;background:#1B7340 !important;border-radius:50%;}
+    /* Font family */
+    body,html,p,span,div,td,th,label,button,a,input,select,textarea{.material-symbols-outlined { font-family: 'Material Symbols Outlined' !important; } body,html,p,span,div,td,th,label,button,a,input,select,textarea{font-family:'Noto Sans','Inter',system-ui,sans-serif !important;}
+    [class*="font-data-mono"],code,pre{font-family:'Source Code Pro','JetBrains Mono',monospace !important;}
+</style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary-fixed": "#d8e2ff", "tertiary": "#ffb786", "surface-dim": "#10131a",
+            "on-tertiary-container": "#461f00", "inverse-primary": "#005ac2",
+            "secondary-container": "#571bc1", "tertiary-container": "#df7412",
+            "surface-container-highest": "#32353c", "surface-container-high": "#272a31",
+            "on-surface": "#e1e2ec", "secondary": "#d0bcff", "on-secondary": "#3c0091",
+            "on-background": "#e1e2ec", "outline": "#8c909f",
+            "surface-container": "#1d2027", "primary-container": "#4d8eff",
+            "surface-bright": "#363941", "error-container": "#93000a",
+            "surface-container-low": "#191b23", "error": "#ffb4ab", "surface": "#10131a",
+            "surface-container-lowest": "#0b0e15", "background": "#10131a",
+            "primary": "#adc6ff", "on-surface-variant": "#c2c6d6", "outline-variant": "#424754"
+          },
+          borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+          spacing: { "kpi-height": "80px", "unit": "4px", "gutter": "16px", "margin-page": "24px", "panel-padding": "20px" },
+          fontFamily: {
+            "label-caps": ["Inter"], "body-base": ["Inter"], "display-lg": ["Inter"], "headline-md": ["Inter"], "data-mono": ["JetBrains Mono"]
+          },
+          fontSize: {
+            "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" }],
+            "body-base": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+            "data-mono": ["14px", { lineHeight: "20px", fontWeight: "500" }]
+          }
+        }
+      }
+    }
+  </script>
+<link rel="stylesheet" href="govt_theme.css"/></head>
+<body class="bg-background font-body-base text-on-background">
+
+  <!-- Sidebar Navigation -->
+  <aside class="fixed left-0 top-0 h-full w-20 bg-surface-container-lowest flex flex-col items-center py-gutter z-50 border-r border-outline-variant/10">
+    <div style="padding:14px 14px 12px;border-bottom:1px solid rgba(255,255,255,0.10);background:#0B2D4D;"><div style="display:flex;align-items:center;gap:10px;"><div style="width:30px;height:30px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="material-symbols-outlined" style="font-size:16px;color:#C49A3A;font-variation-settings:'FILL' 1;">train</span></div><div><div style="font-size:11px;font-weight:700;color:#FFFFFF;letter-spacing:0.04em;text-transform:uppercase;">RailTwin AI</div><div style="font-size:9px;color:rgba(255,255,255,0.45);letter-spacing:0.05em;text-transform:uppercase;">Ops Portal</div></div><button onclick="toggleSidebar()" style="background:transparent;border:none;color:#C49A3A;cursor:pointer;margin-left:auto;display:flex;" title="Close Sidebar"><span class="material-symbols-outlined" style="font-size:20px;">close</span></button></div></div>
+    <nav class="flex flex-col gap-6">
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="index.html" title="Overview">
+        <span class="material-symbols-outlined text-[28px]">dashboard</span><span style="font-size:12px;">Dashboard</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="command_center_network_map_1.html" title="Network Map">
+        <span class="material-symbols-outlined text-[28px]">map</span><span style="font-size:12px;">Network Map</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="ai_planner_optimizer.html" title="Planning Workspace">
+        <span class="material-symbols-outlined text-[28px]">edit_calendar</span><span style="font-size:12px;">AI Planner</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="command_center_network_map_2.html" title="Task Explorer">
+        <span class="material-symbols-outlined text-[28px]">assignment</span><span style="font-size:12px;">Task Explorer</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="data_upload_center.html" title="Data Ingestion & Upload">
+        <span class="material-symbols-outlined text-[28px]">cloud_upload</span><span style="font-size:12px;">Data Ingestion</span>
+      </a>
+      <a aria-current="page" class="p-3 rounded-xl transition-all group bg-primary text-on-primary shadow-[0_0_12px_rgba(173,198,255,0.4)]" href="asset_digital_twin_explorer.html" title="Asset Inventory">
+        <span class="material-symbols-outlined text-[28px]">inventory_2</span><span style="font-size:12px;">Asset Twin</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="operations_analytics.html" title="AI Analytics">
+        <span class="material-symbols-outlined text-[28px]">analytics</span><span style="font-size:12px;">Analytics</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Top Zone & Header -->
+  <div class="pl-20">
+    <header class="fixed top-0 left-20 right-0 h-16 bg-surface-dim/90 backdrop-blur-md z-40 px-margin-page flex items-center justify-between border-b border-outline-variant/20">
+      <div class="flex items-center gap-2 text-label-caps font-label-caps text-on-surface-variant">
+        <span class="hover:text-primary cursor-pointer transition-colors uppercase">India</span>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span class="hover:text-primary cursor-pointer transition-colors uppercase" id="dt-zone">Northern Zone</span>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span class="hover:text-primary cursor-pointer transition-colors uppercase" id="dt-div">Delhi Division</span>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span class="text-primary font-bold uppercase" id="dt-section">Ghaziabad-Aligarh Section</span>
+      </div>
+      <div class="flex items-center gap-gutter">
+        <div class="flex items-center gap-2 bg-surface-container px-3 py-1.5 rounded-full border border-outline-variant/30">
+          <span class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_#ffb786] animate-pulse"></span>
+          <span class="text-label-caps font-label-caps text-on-surface">Digital Twin Telemetry: Live</span>
+        </div>
+        <div class="w-px h-6 bg-outline-variant/30 mx-2"></div>
+        <div class="flex items-center gap-3">
+          <img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20" src="../professional_headshot_of_a_senior_railway_operations_manager_indian_male_in_his/screen.png"/>
+          <button onclick="doLogout()" title="Logout" class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-all">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="fixed top-16 left-20 right-0 h-kpi-height bg-surface-container-low/50 backdrop-blur-sm z-30 px-margin-page flex items-center gap-8 border-b border-outline-variant/10">
+      <div class="flex flex-col">
+        <span class="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase">Asset Health Index</span>
+        <div class="flex items-end gap-2">
+          <span class="font-data-mono text-headline-md text-tertiary" id="dt-health-score">82%</span>
+          <span class="material-symbols-outlined text-tertiary text-[18px] mb-1">health_and_safety</span>
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase">Critical Defect Status</span>
+        <div class="flex items-end gap-2">
+          <span class="font-data-mono text-headline-md text-error kpi-pulse" id="dt-defect-status">Pier 4 Fracture</span>
+          <span class="material-symbols-outlined text-error text-[18px] mb-1">warning</span>
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase">Recommended Block Window</span>
+        <div class="flex items-end gap-2">
+          <span class="font-data-mono text-headline-md text-primary">Tonite 02:00 (3.5h)</span>
+          <span class="material-symbols-outlined text-primary text-[18px] mb-1">schedule</span>
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase">Vibration Index</span>
+        <div class="flex items-end gap-2">
+          <span class="font-data-mono text-headline-md text-on-surface" id="dt-vib-index">4.2 mm/s</span>
+          <span class="text-xs text-outline font-data-mono mb-1">RMS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area: Model View + Sidebar -->
+    <main class="relative pt-[144px] pb-[88px] min-h-screen bg-surface-dim">
+      <div class="flex flex-col w-full px-margin-page gap-gutter">
+
+        <!-- Top Status Bar (Asset Context) -->
+        <div class="flex justify-between items-end bg-surface-container-high rounded-xl p-panel-padding shadow-md border border-outline-variant/10">
+          <div class="flex flex-col gap-2">
+            <span class="text-label-caps font-label-caps text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
+              <span class="material-symbols-outlined text-[16px] text-tertiary">foundation</span>
+              Asset Type: High-Speed Viaduct • KM 26.4 UP Line
+            </span>
+            <h1 class="text-display-lg font-display-lg text-on-surface">Bridge Structure BX-8092</h1>
+            <div class="flex items-center gap-4 mt-1">
+              <div class="flex items-center gap-2 bg-surface px-3 py-1.5 rounded-full border border-error/30">
+                <span class="w-2 h-2 rounded-full bg-error kpi-pulse shadow-[0_0_8px_#ffb4ab]"></span>
+                <span class="text-data-mono font-data-mono text-on-surface text-xs font-bold">Criticality: High (0.98)</span>
+              </div>
+              <div class="flex items-center gap-2 bg-surface px-3 py-1.5 rounded-full border border-outline-variant/20">
+                <span class="material-symbols-outlined text-[16px] text-outline">history</span>
+                <span class="text-data-mono font-data-mono text-on-surface text-xs">Last Inspection: 12d ago</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col items-end gap-1">
+            <span class="text-label-caps font-label-caps text-on-surface-variant uppercase">Current Structural Integrity</span>
+            <div class="flex items-baseline gap-2">
+              <span class="text-[52px] leading-none font-display-lg text-tertiary tracking-tighter" id="big-health-score">82</span>
+              <span class="text-headline-md font-headline-md text-tertiary">%</span>
+            </div>
+            <div class="w-48 h-1.5 bg-surface rounded-full overflow-hidden mt-1 relative">
+              <div class="h-full bg-tertiary w-[82%]" id="health-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content Area: Model View + Sidebar -->
+        <div class="flex gap-gutter w-full min-h-[580px]">
+
+          <!-- Center Stage: 3D Asset Viewer -->
+          <div class="flex-1 bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden relative flex flex-col group border border-outline-variant/10">
+            <div class="absolute inset-0 bg-cover bg-center opacity-60 mix-blend-luminosity" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBcXYwRSJljbSdLrZxDuJRtvIMe71bWSmekzU0sm-NFFdJDFTUhFXC-dl8SN98o7epm3UUUgRSlbUyUqZEYKG6UnXjeKLXNlY0I-w9CVIZhIsQ_Ah3ta0yvAPOD_TmAcG5lEpQkhjweO4561S-tmpn7VfVzLcy3ykXduabmzcy1pNe7oWiNh09ObzpdygUQJ7XuaNrYJ8nvzogyWk3ehGMgqrQNy-_4mfDTg1XuY1yu00qGFULOjxKz6Q')"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent z-0"></div>
+
+            <!-- Viewer Controls -->
+            <div class="absolute top-4 right-4 z-10 flex gap-2">
+              <button onclick="injectBridgeDefect()" class="bg-error/20 hover:bg-error/30 text-error border border-error/40 px-3 py-1.5 rounded-lg text-xs font-data-mono font-bold flex items-center gap-1 shadow-md active:scale-95" title="Simulate Stress Spike on Pier 4">
+                <span class="material-symbols-outlined text-[16px]">bolt</span>
+                <span>Simulate Defect</span>
+              </button>
+            </div>
+
+            <!-- Telemetry Markers Overlay -->
+            <div class="absolute top-1/3 left-1/4 z-10 flex flex-col items-center group/marker cursor-pointer" onclick="showPier4Detail()">
+              <div class="w-5 h-5 bg-error rounded-full shadow-[0_0_12px_#ffb4ab] relative flex items-center justify-center mb-1">
+                <div class="absolute w-10 h-10 rounded-full border border-error/50 animate-ping"></div>
+                <span class="w-2 h-2 bg-background rounded-full"></span>
+              </div>
+              <div class="bg-surface-container/95 border border-error/40 p-2.5 rounded-lg shadow-xl whitespace-nowrap -mt-2 -ml-24 z-20">
+                <span class="text-label-caps font-label-caps text-error uppercase block font-bold">Pier 4: Micro-Crack</span>
+                <span class="text-data-mono text-on-surface text-xs">Grouting Task TSK-512D</span>
+              </div>
+            </div>
+
+            <!-- Bottom Sensor Overlay Toolbar -->
+            <div class="mt-auto relative z-10 p-6 flex justify-between items-end">
+              <div class="flex gap-4">
+                <div class="bg-surface-container-high/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-lg border border-outline-variant/20 flex flex-col gap-0.5">
+                  <span class="text-label-caps font-label-caps text-on-surface-variant uppercase">Vibration Spectrum</span>
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-headline-md font-headline-md text-on-surface font-bold" id="sens-vib">4.2</span>
+                    <span class="text-data-mono text-outline text-xs">mm/s</span>
+                  </div>
+                </div>
+                <div class="bg-surface-container-high/90 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-lg border border-outline-variant/20 flex flex-col gap-0.5">
+                  <span class="text-label-caps font-label-caps text-on-surface-variant uppercase">Structural Load</span>
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-headline-md font-headline-md text-on-surface font-bold">94</span>
+                    <span class="text-data-mono text-outline text-xs">%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-surface-container-lowest/90 backdrop-blur-md rounded-xl p-1 flex shadow-lg border border-outline-variant/20">
+                <button onclick="setSensorMode('PHYSICAL')" class="sens-mode-btn px-4 py-2 rounded-lg bg-surface-container text-primary text-label-caps font-label-caps uppercase transition-colors">Physical</button>
+                <button onclick="setSensorMode('THERMAL')" class="sens-mode-btn px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface text-label-caps font-label-caps uppercase transition-colors">Thermal</button>
+                <button onclick="setSensorMode('STRESS')" class="sens-mode-btn px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface text-label-caps font-label-caps uppercase transition-colors">Stress Map</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar: AI Recommended Windows & History -->
+          <div class="w-[420px] flex flex-col gap-gutter shrink-0">
+            <!-- AI Feasible Blocks -->
+            <div class="bg-surface-container-low rounded-xl p-5 shadow-md flex flex-col gap-4 border border-outline-variant/10">
+              <div class="flex justify-between items-center">
+                <span class="text-headline-md text-body-base font-bold text-on-surface flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary">psychology</span>
+                  Feasible Maintenance Blocks
+                </span>
+                <span class="font-data-mono text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">CP-SAT</span>
+              </div>
+              <div class="flex flex-col gap-3">
+                <div class="bg-surface-container p-3 rounded-lg flex flex-col gap-2 relative overflow-hidden border-l-2 border-primary">
+                  <div class="flex justify-between items-start">
+                    <div class="flex flex-col">
+                      <span class="text-body-base font-semibold text-on-surface">Tonight, 02:00 - 05:30</span>
+                      <span class="text-data-mono text-on-surface-variant text-xs">Duration: 3.5 hrs (Window 210m)</span>
+                    </div>
+                    <span class="bg-primary/20 text-primary text-label-caps text-[10px] px-2 py-0.5 rounded font-bold uppercase">Optimal</span>
+                  </div>
+                  <div class="pt-2 flex justify-between items-center text-xs font-data-mono text-on-surface-variant border-t border-outline-variant/10">
+                    <span>Task TSK-512D Grouting</span>
+                    <a href="ai_planner_optimizer.html" class="text-primary hover:underline font-bold">Schedule →</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Maintenance Timeline -->
+            <div class="bg-surface-container-low rounded-xl p-5 shadow-md flex-1 flex flex-col min-h-0 border border-outline-variant/10">
+              <span class="font-headline-md text-body-base font-bold text-on-surface mb-3">Intervention History</span>
+              <div class="flex-1 overflow-y-auto pr-2 relative space-y-4">
+                <div class="relative pl-6 pb-2 group">
+                  <div class="absolute left-0 top-1 w-2.5 h-2.5 bg-primary rounded-full"></div>
+                  <div class="flex flex-col gap-0.5">
+                    <span class="text-data-mono text-on-surface-variant text-xs">12 Days Ago (TMS)</span>
+                    <span class="text-body-base text-xs font-semibold text-on-surface">Ultrasonic Testing (UT) of Girders</span>
+                    <span class="text-label-caps text-[10px] text-outline uppercase">Routine Civil Cadre</span>
+                  </div>
+                </div>
+                <div class="relative pl-6 pb-2 group">
+                  <div class="absolute left-0 top-1 w-2.5 h-2.5 bg-outline rounded-full"></div>
+                  <div class="flex flex-col gap-0.5">
+                    <span class="text-data-mono text-on-surface-variant text-xs">45 Days Ago</span>
+                    <span class="text-body-base text-xs font-semibold text-on-surface">Expansion Joint Lubrication</span>
+                    <span class="text-label-caps text-[10px] text-outline uppercase">Preventative Maintenance</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function setSensorMode(mode) {
+      document.querySelectorAll('.sens-mode-btn').forEach(b => {
+        b.classList.remove('bg-surface-container', 'text-primary');
+        b.classList.add('text-on-surface-variant');
+      });
+      event.target.classList.remove('text-on-surface-variant');
+      event.target.classList.add('bg-surface-container', 'text-primary');
+      alert(`Sensor Mode: Switched telemetry overlay to ${mode} mode.`);
+    }
+
+    function injectBridgeDefect() {
+      document.getElementById('dt-health-score').innerText = '71%';
+      document.getElementById('big-health-score').innerText = '71';
+      document.getElementById('health-bar').style.width = '71%';
+      document.getElementById('health-bar').className = 'h-full bg-error w-[71%]';
+      document.getElementById('dt-defect-status').innerText = 'Severe Vibration Spike';
+      document.getElementById('sens-vib').innerText = '6.8';
+      document.getElementById('dt-vib-index').innerText = '6.8 mm/s';
+      RailTwinEngine.logAudit("ASSET_TELEMETRY_ALERT", "Bridge Structure BX-8092 Pier 4 vibration exceeded threshold (6.8 mm/s). Maintenance priority elevated.");
+      alert('⚠️ SENSOR TELEMETRY SPIKE:\n\nPier 4 Vibration increased to 6.8 mm/s. Structural health dropped to 71%. Task priority elevated to CRITICAL in AI Planner.');
+    }
+
+    function showPier4Detail() {
+      alert('ASSET DETAIL: Bridge BX-8092 Pier 4\n\n• Type: High-Speed Prestressed Concrete Viaduct\n• Location: KM 26.4 UP Line\n• Defect: Micro-fracture detected along expansion bearing\n• Corrective Action: Epoxy Grouting required (Duration: 3.5h)\n• Recommended Window: Tonight 02:00 - 05:30');
+    }
+
+    function doLogout() {
+      sessionStorage.removeItem('rt_auth');
+      try { localStorage.removeItem('rt_auth'); } catch(e) {}
+      window.location.href = 'login.html';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const net = RailTwinEngine.getCurrentNetwork();
+      document.getElementById('dt-zone').innerText = net.zone;
+      document.getElementById('dt-div').innerText = net.division;
+      document.getElementById('dt-section').innerText = net.section;
+    });
+  </script>
+<button id="sidebar-reopen-btn" onclick="toggleSidebar()" title="Open Sidebar">
+  <span class="material-symbols-outlined">menu</span> Menu
+</button>
+<script>
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-closed');
+}
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

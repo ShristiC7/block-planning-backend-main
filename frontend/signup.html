@@ -1,0 +1,241 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>RailTwin AI — Request System Clearance | Railway Operations Portal</title>
+  <meta name="description" content="Request operational clearance for RailTwin AI Railway Command Center. Authorized railway personnel only."/>
+  <link rel="stylesheet" href="govt_theme.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    html, body { overflow-y: auto !important; overflow-x: hidden !important; }
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .animate-spin{animation:spin 0.8s linear infinite;}
+    @keyframes fadeIn{from{opacity:0;transform:scale(0.96);}to{opacity:1;transform:scale(1);}}
+    .fade-in{animation:fadeIn 0.3s ease;}
+    body{min-height:100vh;display:flex;flex-direction:column;background:var(--rt-bg);}
+    .signup-bg{flex:1;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--rt-primary-dark) 0%,#1A4A7A 60%,var(--rt-primary) 100%);position:relative;overflow:hidden;padding:32px 16px;}
+    .signup-bg::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,0.03) 0px,rgba(255,255,255,0.03) 1px,transparent 1px,transparent 40px),repeating-linear-gradient(90deg,rgba(255,255,255,0.03) 0px,rgba(255,255,255,0.03) 1px,transparent 1px,transparent 60px);}
+    .signup-wrap{display:flex;align-items:stretch;justify-content:center;gap:36px;max-width:960px;width:100%;z-index:1;position:relative;}
+    .left-panel{display:none;flex-direction:column;justify-content:space-between;width:340px;flex-shrink:0;color:#fff;}
+    @media(min-width:920px){.left-panel{display:flex;}}
+    .signup-card{background:#FFFFFF;border-radius:8px;box-shadow:0 8px 40px rgba(10,30,60,0.35);width:100%;max-width:520px;overflow:hidden;position:relative;}
+    .signup-header{background:var(--rt-primary-dark);padding:20px 24px 18px;border-bottom:3px solid var(--rt-gold);}
+    .signup-body{padding:24px;}
+    .form-group{margin-bottom:14px;}
+    .form-label{display:block;font-size:11px;font-weight:700;color:var(--rt-text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+    .form-input{width:100%;background:#FFFFFF;border:1px solid var(--rt-border);border-radius:6px;padding:9px 12px;font-size:13px;font-family:var(--rt-font-body);color:var(--rt-text-primary);outline:none;transition:border-color 0.15s,box-shadow 0.15s;}
+    .form-input:focus{border-color:var(--rt-primary);box-shadow:0 0 0 3px rgba(0,90,156,0.10);}
+    .form-input.mono{font-family:var(--rt-font-mono);letter-spacing:0.04em;}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .btn-submit{width:100%;background:var(--rt-primary);color:#FFFFFF;border:none;border-radius:6px;padding:11px 20px;font-size:13px;font-weight:700;font-family:var(--rt-font-body);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:0.03em;transition:background 0.15s;text-transform:uppercase;margin-top:8px;}
+    .btn-submit:hover{background:var(--rt-primary-hover);}
+    .btn-submit:disabled{opacity:0.65;cursor:not-allowed;}
+    .btn-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--rt-text-secondary);text-decoration:none;font-weight:600;margin-top:12px;}
+    .btn-back:hover{color:var(--rt-primary);text-decoration:underline;}
+    .policy-box{background:var(--rt-card-alt);border:1px solid var(--rt-border);border-radius:6px;padding:10px 14px;font-size:11px;color:var(--rt-text-secondary);line-height:1.5;margin-bottom:16px;}
+  </style>
+</head>
+<body>
+  <!-- Top identity bar -->
+  <div class="rt-identity-bar" style="font-family:var(--rt-font-body);">
+    <span>Railway Operations Management System &mdash; RailTwin AI</span>
+    <span>Clearance Authorization Protocol</span>
+  </div>
+
+  <div class="signup-bg">
+    <div class="signup-wrap">
+      <!-- Left side info panel -->
+      <div class="left-panel">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <div style="width:34px;height:34px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.20);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+              <span class="material-symbols-outlined" style="font-size:20px;color:var(--rt-gold);font-variation-settings:'FILL' 1;">train</span>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">RailTwin AI</div>
+              <div style="font-size:9.5px;color:rgba(255,255,255,0.50);letter-spacing:0.06em;text-transform:uppercase;">Operations Control Hub</div>
+            </div>
+          </div>
+          <h1 style="font-size:22px;font-weight:700;color:#fff;line-height:1.3;margin:0 0 10px 0;">Request Personnel Clearance</h1>
+          <p style="font-size:12.5px;color:rgba(255,255,255,0.70);line-height:1.6;margin:0 0 20px 0;">
+            Access to the RailTwin AI Digital Twin &amp; Optimization Hub is restricted to authenticated engineering and operations officers.
+          </p>
+
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:10px 12px;">
+              <span class="material-symbols-outlined" style="font-size:18px;color:var(--rt-gold);">shield</span>
+              <div style="font-size:11.5px;"><strong style="display:block;color:#fff;">Role-Based Access Control</strong>TMS, SMMS, TDMS access profiles</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:10px 12px;">
+              <span class="material-symbols-outlined" style="font-size:18px;color:var(--rt-gold);">verified</span>
+              <div style="font-size:11.5px;"><strong style="display:block;color:#fff;">Division Verification</strong>Direct sync with divisional employee DB</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:10px;color:rgba(255,255,255,0.40);letter-spacing:0.05em;text-transform:uppercase;">
+          Ministry Standards &bull; Safe Operations Protocol
+        </div>
+      </div>
+
+      <!-- Right side form card -->
+      <div class="signup-card">
+        <div class="signup-header">
+          <div style="font-size:14px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.03em;">Personnel Access Request</div>
+          <div style="font-size:10.5px;color:rgba(255,255,255,0.55);letter-spacing:0.04em;margin-top:2px;">Complete all mandatory fields for clearance approval</div>
+        </div>
+
+        <!-- Success state -->
+        <div id="success-state" style="display:none;padding:36px 24px;text-align:center;" class="fade-in">
+          <div style="width:52px;height:52px;background:var(--rt-green-light);border:1px solid rgba(27,115,64,0.30);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+            <span class="material-symbols-outlined" style="font-size:30px;color:var(--rt-green);">check_circle</span>
+          </div>
+          <h2 style="font-size:17px;font-weight:700;color:var(--rt-text-primary);margin:0 0 6px;">Clearance Request Approved</h2>
+          <p style="font-size:12.5px;color:var(--rt-text-secondary);line-height:1.5;margin:0 0 20px;">Your credentials have been validated. Initializing your command center session...</p>
+          <div style="width:100%;height:4px;background:var(--rt-border-light);border-radius:2px;overflow:hidden;">
+            <div id="redirect-bar" style="height:100%;background:var(--rt-primary);width:0%;transition:width 3s linear;"></div>
+          </div>
+        </div>
+
+        <!-- Form card -->
+        <div id="form-card" class="signup-body">
+          <div class="policy-box">
+            <strong>Security Notice:</strong> All personnel access requests are logged and monitored under standard railway IT security policies.
+          </div>
+
+          <form id="signup-form" onsubmit="handleSignup(event)" novalidate>
+            <!-- Full Name -->
+            <div class="form-group">
+              <label class="form-label" for="fullName">Full Name</label>
+              <input id="fullName" type="text" placeholder="e.g. Rajesh Kumar Sharma" required class="form-input"/>
+            </div>
+
+            <div class="grid-2">
+              <!-- Employee ID -->
+              <div class="form-group">
+                <label class="form-label" for="uid">Employee ID / Personnel No.</label>
+                <input id="uid" type="text" placeholder="e.g. NRD-4829" required class="form-input mono"/>
+              </div>
+              <!-- Email -->
+              <div class="form-group">
+                <label class="form-label" for="email">Official Email</label>
+                <input id="email" type="email" placeholder="name@railway.gov.in" required class="form-input"/>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <!-- Department -->
+              <div class="form-group">
+                <label class="form-label" for="department">Department / Cadre</label>
+                <select id="department" required class="form-input" style="cursor:pointer;">
+                  <option disabled selected value="">Select department...</option>
+                  <option value="eng">Engineering / Track (TMS)</option>
+                  <option value="snt">Signal &amp; Telecom (SMMS)</option>
+                  <option value="trd">Traction Distribution (TDMS)</option>
+                  <option value="ops">Traffic &amp; Operations</option>
+                  <option value="acc">Safety &amp; Inspections</option>
+                </select>
+              </div>
+
+              <!-- Designation -->
+              <div class="form-group">
+                <label class="form-label" for="designation">Designation</label>
+                <input id="designation" type="text" placeholder="e.g. SSE (P-Way), ADEN" required class="form-input"/>
+              </div>
+            </div>
+
+            <!-- Submit button -->
+            <button id="submit-btn" type="submit" class="btn-submit">
+              <span class="submit-label" style="display:flex;align-items:center;gap:8px;">
+                <span class="material-symbols-outlined">send</span>
+                <span>Submit Clearance Request</span>
+              </span>
+              <span class="loading-label" style="display:none;align-items:center;gap:8px;">
+                <span class="material-symbols-outlined animate-spin">refresh</span>
+                <span>Validating credentials...</span>
+              </span>
+            </button>
+
+            <div style="text-align:center;margin-top:12px;">
+              <a href="login.html" class="btn-back">
+                <span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span>
+                <span>Return to Secure Login</span>
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom strip -->
+  <div style="background:var(--rt-primary-dark);color:rgba(255,255,255,0.40);font-size:10px;text-align:center;padding:6px;letter-spacing:0.05em;text-transform:uppercase;font-family:var(--rt-font-body);">
+    RailTwin AI Operations Platform &mdash; Authorized Railway Personnel Only
+  </div>
+
+  <script>
+    (function() {
+      if (sessionStorage.getItem('rt_auth')) {
+        window.location.replace('index.html');
+      }
+      try {
+        const stored = localStorage.getItem('rt_auth');
+        if (stored) {
+          sessionStorage.setItem('rt_auth', stored);
+          window.location.replace('index.html');
+        }
+      } catch(e) {}
+    })();
+
+    function setLoading(loading) {
+      const btn = document.getElementById('submit-btn');
+      const label = btn.querySelector('.submit-label');
+      const loadLabel = btn.querySelector('.loading-label');
+      btn.disabled = loading;
+      if (loading) {
+        label.style.display = 'none';
+        loadLabel.style.display = 'flex';
+      } else {
+        label.style.display = 'flex';
+        loadLabel.style.display = 'none';
+      }
+    }
+
+    function handleSignup(e) {
+      e.preventDefault();
+      const fullName = document.getElementById('fullName').value.trim();
+      const uid = document.getElementById('uid').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const dept = document.getElementById('department').value;
+      const desig = document.getElementById('designation').value.trim();
+
+      if (!fullName || !uid || !email || !dept || !desig) {
+        alert('Please fill out all fields before submitting.');
+        return;
+      }
+
+      setLoading(true);
+
+      setTimeout(() => {
+        const authData = { id: uid, name: fullName, dept, time: Date.now() };
+        sessionStorage.setItem('rt_auth', JSON.stringify(authData));
+
+        document.getElementById('form-card').style.display = 'none';
+        const successState = document.getElementById('success-state');
+        successState.style.display = 'block';
+
+        setTimeout(() => {
+          document.getElementById('redirect-bar').style.width = '100%';
+        }, 50);
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 3000);
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
+
+

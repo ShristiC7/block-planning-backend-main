@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    // Auth Guard
+    (function() {
+      if (!sessionStorage.getItem('rt_auth')) {
+        try { var s = localStorage.getItem('rt_auth'); if (s) { sessionStorage.setItem('rt_auth', s); return; } } catch(e) {}
+        window.location.replace('login.html');
+      }
+    })();
+  </script>
+  <script src="railway_engine.js"></script>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>RailTwin AI — Multi-Department Task Explorer & Real-Time Railway GIS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    @layer base {
+      html, body { margin:0; padding:0; background-color:#10131a; }
+      body { overscroll-behavior:none; overflow-x:hidden; }
+      main > :first-child { margin-top:0!important; }
+      main > :last-child { margin-bottom:0!important; }
+    }
+    ::-webkit-scrollbar { display:none; }
+    .glass-panel { background: rgba(29,32,39,0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+    .kpi-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(140, 144, 159, 0.2); border-radius: 10px; }
+
+    /* Light Theme Leaflet Styling */
+    .leaflet-container {
+      background: #f8fafc !important;
+      font-family: 'Inter', sans-serif !important;
+    }
+    .leaflet-bar a {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    }
+    .leaflet-bar a:hover {
+      background-color: #f1f5f9 !important;
+      color: #2563eb !important;
+    }
+    .leaflet-popup-content-wrapper {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 10px !important;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+    }
+    .leaflet-popup-tip {
+      background: #ffffff !important;
+    }
+    .train-pulsing-icon {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      cursor: pointer;
+    }
+    .block-pulsing-zone {
+      animation: blockPulse 2s infinite ease-in-out;
+    }
+    @keyframes blockPulse {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 0.4; }
+    }
+  
+    /* === GOVERNMENT RAILWAY THEME OVERRIDE === */
+    html,body{background:#F5F7F9 !important;color:#1A2B45 !important;}
+    /* Sidebar */
+    aside{width:220px !important;background:#12355B !important;border-right:1px solid rgba(255,255,255,0.08) !important;padding:0 !important;align-items:stretch !important;}
+    aside nav{gap:0 !important;flex:1;padding-top:8px;}
+    aside nav a{padding:9px 14px !important;border-radius:0 !important;display:flex !important;flex-direction:row !important;align-items:center !important;gap:10px !important;width:100% !important;color:rgba(255,255,255,0.82) !important;font-size:12.5px !important;font-weight:500 !important;font-family:var(--rt-font-body) !important;border-left:3px solid transparent !important;text-decoration:none;transition:background 0.15s,color 0.15s !important;box-shadow:none !important;background:transparent !important;}
+    aside nav a:hover{background:rgba(255,255,255,0.08) !important;color:#fff !important;}
+    aside nav a[aria-current="page"],aside nav a.active{background:rgba(0,90,156,0.40) !important;border-left-color:#C49A3A !important;color:#fff !important;font-weight:600 !important;}
+    aside nav a .material-symbols-outlined{font-size:18px !important;flex-shrink:0;opacity:0.82;}
+    aside nav a[aria-current="page"] .material-symbols-outlined{color:#C49A3A !important;opacity:1;}
+    /* Layout */
+    .pl-20,.pl-64,[class*="ml-64"]{padding-left:220px !important;}
+    /* Header/topbar */
+    header{background:#12355B !important;border-bottom:2px solid #C49A3A !important;backdrop-filter:none !important;}
+    /* Surface colors -> white/light */
+    [class*="bg-surface-container-lowest"]{background:#EEF2F5 !important;}
+    [class*="bg-surface-container-low"]{background:#F8FAFC !important;}
+    [class*="bg-surface-container-high"]{background:#FFFFFF !important;}
+    [class*="bg-surface-container-highest"]{background:#F0F3F6 !important;}
+    [class*="bg-surface-container"]:not([class*="bg-surface-container-l"]):not([class*="bg-surface-container-h"]){background:#FFFFFF !important;}
+    [class*="bg-surface-dim"],[class*="bg-background"],[class*="bg-surface"]:not([class*="bg-surface-c"]){background:#F5F7F9 !important;}
+    [class*="bg-surface-bright"]{background:#FFFFFF !important;}
+    /* Text */
+    [class*="text-on-surface"]:not([class*="text-on-surface-variant"]){color:#1A2B45 !important;}
+    [class*="text-on-surface-variant"]{color:#4A5E73 !important;}
+    [class*="text-on-background"]{color:#1A2B45 !important;}
+    [class*="text-primary"]{color:#005A9C !important;}
+    [class*="text-secondary"]{color:#1D5FA8 !important;}
+    [class*="text-tertiary"]{color:#B45309 !important;}
+    [class*="text-error"]{color:#B3261E !important;}
+    [class*="text-outline"]:not([class*="text-outline-variant"]){color:#7A8EA0 !important;}
+    [class*="text-outline-variant"]{color:#B8C4D2 !important;}
+    [class*="text-on-primary"]{color:#FFFFFF !important;}
+    /* Primary backgrounds */
+    [class*="bg-primary"]:not([class*="bg-primary/"]):not([class*="bg-primary-fixed"]):not([class*="bg-primary-c"]){background:#005A9C !important;}
+    [class*="bg-primary/10"]{background:rgba(0,90,156,0.08) !important;}
+    [class*="bg-primary/20"]{background:rgba(0,90,156,0.12) !important;}
+    [class*="bg-error"]{background:rgba(179,38,30,0.08) !important;}
+    [class*="bg-secondary-container"]{background:rgba(29,95,168,0.10) !important;}
+    [class*="bg-tertiary-container"]{background:rgba(180,83,9,0.08) !important;}
+    /* Borders */
+    [class*="border-outline-variant"]{border-color:#D0D7E3 !important;}
+    [class*="border-outline"]:not([class*="border-outline-variant"]){border-color:#B8C4D2 !important;}
+    [class*="border-primary"]{border-color:#005A9C !important;}
+    [class*="border-error"]{border-color:#B3261E !important;}
+    /* Radius */
+    [class*="rounded-2xl"]{border-radius:10px !important;}
+    [class*="rounded-xl"]{border-radius:8px !important;}
+    [class*="rounded-full"]{border-radius:20px !important;}
+    /* Shadows */
+    .shadow-md,.shadow-lg,.shadow-xl,.shadow-2xl{box-shadow:0 1px 4px rgba(18,53,91,0.08),0 2px 8px rgba(18,53,91,0.05) !important;}
+    /* Typography */
+    h1,h2,h3,h4{color:#1A2B45 !important;}
+    [class*="text-display-lg"]{color:#12355B !important;font-size:24px !important;}
+    [class*="text-headline-md"]{color:#1A2B45 !important;}
+    /* Gradient bleeds */
+    .bg-gradient-to-r:not(aside):not(header){background:transparent !important;}
+    /* Scrollbar */
+    ::-webkit-scrollbar-thumb{background:#C0CAD4 !important;}
+    ::-webkit-scrollbar-track{background:#EEF2F5 !important;}
+    /* Backdrop blur — remove */
+    .backdrop-blur-xl,.backdrop-blur-md,.backdrop-blur-sm{backdrop-filter:none !important;}
+    /* Animated glow blobs — hide */
+    .blur-\[140px\],.blur-\[120px\]{display:none !important;}
+    /* Buttons */
+    button[class*="bg-primary"]:not([class*="bg-primary/"]),a[class*="bg-primary"]:not([class*="bg-primary/"]){background:#005A9C !important;color:#fff !important;}
+    button[class*="bg-primary"]:hover,a[class*="bg-primary"]:hover{background:#004A87 !important;}
+    /* Input fields */
+    input,select,textarea{background:#FFFFFF !important;border-color:#D0D7E3 !important;color:#1A2B45 !important;}
+    input:focus,select:focus,textarea:focus{border-color:#005A9C !important;box-shadow:0 0 0 3px rgba(0,90,156,0.10) !important;}
+    /* Table heads */
+    thead,thead tr{background:#12355B !important;color:#FFFFFF !important;}
+    thead th{color:#FFFFFF !important;}
+    /* Glow effects — remove */
+    [class*="shadow-\[0_0"]{box-shadow:0 1px 3px rgba(18,53,91,0.08) !important;}
+    /* Animated elements — calm down */
+    .animate-ping{animation:none !important;background:#1B7340 !important;border-radius:50%;}
+    /* Font family */
+    body,html,p,span,div,td,th,label,button,a,input,select,textarea{.material-symbols-outlined { font-family: 'Material Symbols Outlined' !important; } body,html,p,span,div,td,th,label,button,a,input,select,textarea{font-family:'Noto Sans','Inter',system-ui,sans-serif !important;}
+    [class*="font-data-mono"],code,pre{font-family:'Source Code Pro','JetBrains Mono',monospace !important;}
+</style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary-fixed": "#d8e2ff", "tertiary": "#ffb786", "surface-dim": "#10131a",
+            "on-tertiary-container": "#461f00", "inverse-primary": "#005ac2",
+            "secondary-container": "#571bc1", "tertiary-container": "#df7412",
+            "surface-container-highest": "#32353c", "surface-container-high": "#272a31",
+            "on-surface": "#e1e2ec", "secondary": "#d0bcff", "on-secondary": "#3c0091",
+            "on-background": "#e1e2ec", "outline": "#8c909f",
+            "surface-container": "#1d2027", "primary-container": "#4d8eff",
+            "surface-bright": "#363941", "error-container": "#93000a",
+            "surface-container-low": "#191b23", "error": "#ffb4ab", "surface": "#10131a",
+            "surface-container-lowest": "#0b0e15", "background": "#10131a",
+            "primary": "#adc6ff", "on-surface-variant": "#c2c6d6", "outline-variant": "#424754"
+          },
+          borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+          spacing: { "kpi-height": "80px", "unit": "4px", "gutter": "16px", "margin-page": "24px", "panel-padding": "20px" },
+          fontFamily: {
+            "label-caps": ["Inter"], "body-base": ["Inter"], "display-lg": ["Inter"], "headline-md": ["Inter"], "data-mono": ["JetBrains Mono"]
+          },
+          fontSize: {
+            "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "700" }],
+            "body-base": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+            "data-mono": ["14px", { lineHeight: "20px", fontWeight: "500" }]
+          }
+        }
+      }
+    }
+  </script>
+<link rel="stylesheet" href="govt_theme.css"/></head>
+<body class="bg-background font-body-base text-on-background">
+
+  <!-- Sidebar Navigation -->
+  <aside class="fixed left-0 top-0 h-full w-20 bg-surface-container-lowest flex flex-col items-center py-gutter z-50 border-r border-outline-variant/10">
+    <div style="padding:14px 14px 12px;border-bottom:1px solid rgba(255,255,255,0.10);background:#0B2D4D;"><div style="display:flex;align-items:center;gap:10px;"><div style="width:30px;height:30px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span class="material-symbols-outlined" style="font-size:16px;color:#C49A3A;font-variation-settings:'FILL' 1;">train</span></div><div><div style="font-size:11px;font-weight:700;color:#FFFFFF;letter-spacing:0.04em;text-transform:uppercase;">RailTwin AI</div><div style="font-size:9px;color:rgba(255,255,255,0.45);letter-spacing:0.05em;text-transform:uppercase;">Ops Portal</div></div><button onclick="toggleSidebar()" style="background:transparent;border:none;color:#C49A3A;cursor:pointer;margin-left:auto;display:flex;" title="Close Sidebar"><span class="material-symbols-outlined" style="font-size:20px;">close</span></button></div></div>
+    <nav class="flex flex-col gap-6">
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="index.html" title="Overview">
+        <span class="material-symbols-outlined text-[28px]">dashboard</span><span style="font-size:12px;">Dashboard</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="command_center_network_map_1.html" title="Network Map">
+        <span class="material-symbols-outlined text-[28px]">map</span><span style="font-size:12px;">Network Map</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="ai_planner_optimizer.html" title="Planning Workspace">
+        <span class="material-symbols-outlined text-[28px]">edit_calendar</span><span style="font-size:12px;">AI Planner</span>
+      </a>
+      <a aria-current="page" class="p-3 rounded-xl transition-all group bg-primary text-on-primary shadow-[0_0_12px_rgba(173,198,255,0.4)]" href="command_center_network_map_2.html" title="Task Explorer">
+        <span class="material-symbols-outlined text-[28px]">assignment</span><span style="font-size:12px;">Task Explorer</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="data_upload_center.html" title="Data Ingestion & Upload">
+        <span class="material-symbols-outlined text-[28px]">cloud_upload</span><span style="font-size:12px;">Data Ingestion</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="asset_digital_twin_explorer.html" title="Asset Inventory">
+        <span class="material-symbols-outlined text-[28px]">inventory_2</span><span style="font-size:12px;">Asset Twin</span>
+      </a>
+      <a class="p-3 rounded-xl text-on-surface-variant hover:text-primary transition-all group" href="operations_analytics.html" title="AI Analytics">
+        <span class="material-symbols-outlined text-[28px]">analytics</span><span style="font-size:12px;">Analytics</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Top Zone & Header -->
+  <div class="pl-20">
+    <header class="fixed top-0 left-20 right-0 h-16 bg-surface-dim/90 backdrop-blur-md z-40 px-margin-page flex items-center justify-between border-b border-outline-variant/20">
+      <div class="flex items-center gap-2 text-label-caps font-label-caps text-on-surface-variant">
+        <span class="hover:text-primary cursor-pointer transition-colors uppercase">India</span>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span class="hover:text-primary cursor-pointer transition-colors uppercase" id="te-zone">Northern Zone</span>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span class="hover:text-primary cursor-pointer transition-colors uppercase" id="te-div">Delhi Division</span>
+        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+        <span class="text-primary font-bold uppercase" id="te-section">Ghaziabad-Aligarh Section</span>
+      </div>
+      <div class="flex items-center gap-gutter">
+        <a href="data_upload_center.html" class="flex items-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 rounded-full text-xs font-data-mono font-bold transition-all">
+          <span class="material-symbols-outlined text-[16px]">cloud_upload</span>
+          <span>Upload Data / CSV</span>
+        </a>
+        <div class="w-px h-6 bg-outline-variant/30 mx-2"></div>
+        <div class="flex items-center gap-3">
+          <img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary/20" src="../professional_headshot_of_a_senior_railway_operations_manager_indian_male_in_his/screen.png"/>
+          <button onclick="doLogout()" title="Logout" class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-all">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- KPI Strip -->
+    <div class="fixed top-16 left-20 right-0 h-kpi-height bg-surface-container-low/50 backdrop-blur-sm z-30 px-margin-page flex items-center gap-8 border-b border-outline-variant/10">
+      <div class="flex flex-col">
+        <span class="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase">Asset Availability</span>
+        <div class="flex items-end gap-2">
+          <span class="font-data-mono text-headline-md text-primary">94.2%</span>
+          <span class="material-symbols-outlined text-primary text-[18px] mb-1">check_circle</span>
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase">Total Tasks Ingested</span>
+        <div class="flex items-end gap-2">
+          <span class="font-data-mono text-headline-md text-on-surface" id="kpi-total-tasks">7 Tasks</span>
+          <span class="material-symbols-outlined text-on-surface-variant text-[18px] mb-1">receipt_long</span>
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase">Critical Overdue Exposure</span>
+        <div class="flex items-end gap-2">
+          <span class="font-data-mono text-headline-md text-error kpi-pulse">2 Critical</span>
+          <span class="material-symbols-outlined text-error text-[18px] mb-1">warning</span>
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <span class="text-label-caps font-label-caps text-on-surface-variant mb-1 uppercase">Bundling Compatibility</span>
+        <div class="flex items-end gap-2">
+          <span class="font-data-mono text-headline-md text-secondary">83% Eligible</span>
+          <span class="material-symbols-outlined text-secondary text-[18px] mb-1">join_inner</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="relative pt-[144px] pb-[88px] min-h-screen bg-surface-dim">
+      <div class="flex flex-col w-full px-margin-page gap-gutter">
+        <div class="grid grid-cols-12 gap-gutter h-[580px]">
+
+          <!-- Left Panel: Task Backlog -->
+          <div class="col-span-4 bg-surface-container rounded-2xl shadow-xl p-5 flex flex-col gap-4 overflow-hidden border border-outline-variant/10">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">Task Backlog</h2>
+                <span class="font-data-mono text-[10px] text-on-surface-variant uppercase">Normalized Common Schema (FR-04)</span>
+              </div>
+              <a href="data_upload_center.html" title="Upload Backlog Data" class="bg-surface-container-highest hover:bg-primary/20 hover:text-primary text-on-surface-variant p-2 rounded-lg transition-all">
+                <span class="material-symbols-outlined text-[20px]">upload_file</span>
+              </a>
+            </div>
+
+            <!-- Dept Filters (FR-06) -->
+            <div class="flex gap-1.5 bg-surface-container-lowest/40 p-1 rounded-xl">
+              <button onclick="filterExplorerTasks('ALL')" class="te-filter-btn flex-1 bg-primary text-on-primary font-label-caps text-[11px] py-1.5 rounded-lg shadow-sm uppercase transition-all">All</button>
+              <button onclick="filterExplorerTasks('ENG')" class="te-filter-btn flex-1 bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-caps text-[11px] py-1.5 rounded-lg uppercase transition-all">ENG (TMS)</button>
+              <button onclick="filterExplorerTasks('SNT')" class="te-filter-btn flex-1 bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-caps text-[11px] py-1.5 rounded-lg uppercase transition-all">S&amp;T (SMMS)</button>
+              <button onclick="filterExplorerTasks('TRD')" class="te-filter-btn flex-1 bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-caps text-[11px] py-1.5 rounded-lg uppercase transition-all">TRD (TDMS)</button>
+            </div>
+
+            <!-- Scrollable Tasks List -->
+            <div class="flex flex-col gap-2.5 overflow-y-auto pr-1 custom-scrollbar flex-1" id="task-backlog-container">
+              <!-- Injected via JS -->
+            </div>
+          </div>
+
+          <!-- Center Panel: Light-Mode Interactive Leaflet GIS Railway Map -->
+          <div class="col-span-5 flex flex-col relative rounded-2xl bg-slate-100 shadow-xl overflow-hidden border border-outline-variant/10">
+            <!-- Leaflet Container -->
+            <div id="gis-map" class="w-full h-full z-0"></div>
+
+            <!-- Map Header Overlay -->
+            <div class="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg z-10 border border-slate-300 shadow-md pointer-events-none">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping"></span>
+                <span class="font-data-mono text-xs text-slate-800 font-bold">Ghaziabad – Aligarh Corridor GIS</span>
+              </div>
+            </div>
+
+            <!-- Train Color Legend Overlay -->
+            <div class="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md px-3 py-2 rounded-xl z-10 border border-slate-300 shadow-md flex items-center justify-between">
+              <div class="flex items-center gap-2.5 text-[10px] font-data-mono">
+                <span class="flex items-center gap-1 font-bold text-purple-700"><span class="w-2.5 h-2.5 rounded-full bg-purple-600"></span> 12042 Shatabdi</span>
+                <span class="flex items-center gap-1 font-bold text-sky-700"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> 22436 Vande Bharat</span>
+                <span class="flex items-center gap-1 font-bold text-emerald-700"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> G-8891 Frt</span>
+                <span class="flex items-center gap-1 font-bold text-rose-700"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span> B-104 Block</span>
+              </div>
+              <button onclick="resetMapView()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-2.5 py-1 rounded text-[10px] font-data-mono uppercase font-bold transition-all shadow-sm">
+                Recenter
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Panel: AI Bundling Discovery & Optimization -->
+          <div class="col-span-3 bg-surface-container rounded-2xl shadow-xl p-panel-padding flex flex-col gap-5 border border-outline-variant/10">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-secondary shadow-[0_0_12px_rgba(208,188,255,0.4)] rounded-full text-[28px]">auto_awesome</span>
+              <div>
+                <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">AI Bundler</h2>
+                <span class="font-data-mono text-[10px] text-on-surface-variant uppercase">Compatibility Engine (FR-07)</span>
+              </div>
+            </div>
+
+            <!-- Bundle Card B-104 -->
+            <div class="bg-surface-container-high rounded-xl p-4 shadow-md flex flex-col gap-3 border border-secondary/30 relative">
+              <div class="flex justify-between items-start">
+                <span class="bg-secondary-container text-on-secondary-container font-data-mono text-xs px-2 py-0.5 rounded font-bold">BUNDLE B-104</span>
+                <span class="font-data-mono text-xs text-primary font-bold">+32% Gain</span>
+              </div>
+              <h3 class="font-headline-md text-body-base text-on-surface font-semibold">Eng + S&amp;T + TRD Tri-Bundle</h3>
+              <p class="text-xs text-on-surface-variant leading-relaxed">
+                Combines Track Weld Inspection (TRK-842), Signal Point Interlocking (SIG-119), and OHE Catenary Tensioning (OHE-992) into one 180m block at Maripat–Dadri (KM 41.8–44.0).
+              </p>
+              <div class="pt-2 border-t border-outline-variant/10 flex items-center justify-between">
+                <span class="font-data-mono text-xs text-secondary font-bold">-210m Downtime</span>
+                <a href="ai_planner_optimizer.html" class="bg-primary text-on-primary font-label-caps text-xs px-3 py-1.5 rounded-lg uppercase font-bold hover:bg-primary-fixed transition-colors flex items-center gap-1">
+                  <span>View in Planner</span>
+                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Priority Scoring Formula Quick Guide (PRD Section 8.2) -->
+            <div class="bg-surface-container-lowest p-3.5 rounded-xl border border-outline-variant/10 flex flex-col gap-2">
+              <span class="font-data-mono text-xs text-primary font-bold uppercase flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">functions</span>
+                PRD Priority Formula
+              </span>
+              <p class="font-data-mono text-[10px] text-on-surface-variant leading-tight">
+                P = 0.30·Crit + 0.25·Sev + 0.20·Urg + 0.15·OpImp + 0.10·FailRisk
+              </p>
+              <span class="text-[10px] text-outline">Click any task card on the left to inspect its geographic position &amp; exact score computation.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Priority Inspection Modal -->
+  <div id="priority-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-surface-container border border-primary/30 rounded-2xl max-w-xl w-full p-6 shadow-2xl flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-outline-variant/10 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[24px]">calculate</span>
+          <h3 class="font-headline-md text-headline-md text-on-surface" id="pm-title">Task Priority Calculation</h3>
+        </div>
+        <button onclick="closePriorityModal()" class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="flex flex-col gap-3 font-body-base text-xs" id="pm-content">
+        <!-- Injected via JS -->
+      </div>
+      <div class="pt-3 border-t border-outline-variant/10 flex justify-end">
+        <button onclick="closePriorityModal()" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-data-mono text-xs uppercase font-bold">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Leaflet Light-Mode Railway GIS Map ---
+    let map = null;
+    let trainMarkers = [];
+
+    const CORRIDOR_COORDS = [
+      [28.6692, 77.4538], // Ghaziabad Jn (KM 0)
+      [28.6250, 77.4950], // Maripat (KM 18)
+      [28.5500, 77.5500], // Dadri (KM 38 - 45)
+      [28.4800, 77.6300], // Boraki (KM 56)
+      [28.4000, 77.7200], // Ajaibpur (KM 72)
+      [28.2000, 77.8800], // Somna (KM 88)
+      [27.8974, 78.0880]  // Aligarh Jn (KM 106)
+    ];
+
+    const STATIONS = [
+      { name: "Ghaziabad Jn (GZB)", coord: [28.6692, 77.4538], code: "GZB" },
+      { name: "Maripat", coord: [28.6250, 77.4950], code: "MIU" },
+      { name: "Dadri Junction", coord: [28.5500, 77.5500], code: "DER" },
+      { name: "Boraki", coord: [28.4800, 77.6300], code: "BRKY" },
+      { name: "Ajaibpur", coord: [28.4000, 77.7200], code: "AJR" },
+      { name: "Aligarh Jn (ALJN)", coord: [27.8974, 78.0880], code: "ALJN" }
+    ];
+
+    function initMap() {
+      if (map) return;
+
+      map = L.map('gis-map', {
+        center: [28.32, 77.77],
+        zoom: 9,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      // Light-Mode Basemap Tiles (CartoDB Positron / OSM Light)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 18,
+        subdomains: 'abcd'
+      }).addTo(map);
+
+      // Mainline Double Track (Blue & Steel Gray for high contrast on light map)
+      L.polyline(CORRIDOR_COORDS, {
+        color: '#1d4ed8',
+        weight: 5,
+        opacity: 0.9
+      }).addTo(map);
+
+      L.polyline(CORRIDOR_COORDS, {
+        color: '#475569',
+        weight: 2,
+        dashArray: '6, 6',
+        opacity: 0.8
+      }).addTo(map);
+
+      // Station Markers with crisp black/blue outlines
+      STATIONS.forEach(st => {
+        const stationIcon = L.divIcon({
+          className: 'station-icon',
+          html: `<div style="width:12px;height:12px;background:#1e293b;border:2.5px solid #ffffff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`,
+          iconSize: [12, 12],
+          iconAnchor: [6, 6]
+        });
+        const marker = L.marker(st.coord, { icon: stationIcon }).addTo(map);
+        marker.bindPopup(`
+          <div style="font-size:12px; font-family:'Inter',sans-serif; color:#0f172a;">
+            <strong style="color:#1d4ed8; font-size:13px;">${st.name}</strong><br/>
+            <span style="color:#64748b; font-family:'JetBrains Mono'; font-size:11px;">Code: ${st.code}</span><br/>
+            <span style="color:#16a34a; font-size:11px; font-weight:600;">● Operational (All Clear)</span>
+          </div>
+        `);
+      });
+
+      // Active Maintenance Block (Bundle B-104) at Maripat-Dadri
+      const blockCoords = [
+        [28.5800, 77.5250],
+        [28.5300, 77.5650]
+      ];
+      const blockZone = L.polyline(blockCoords, {
+        color: '#e11d48',
+        weight: 12,
+        opacity: 0.85,
+        className: 'block-pulsing-zone'
+      }).addTo(map);
+
+      blockZone.bindPopup(`
+        <div style="font-size:12px; font-family:'Inter',sans-serif; color:#0f172a;">
+          <div style="background:#be123c; color:#ffffff; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:10px; font-family:'JetBrains Mono'; display:inline-block; margin-bottom:4px;">ACTIVE BLOCK: BUNDLE B-104</div>
+          <div style="font-weight:bold; color:#0f172a; font-size:13px;">KM 41.8 – 44.0 (Maripat–Dadri)</div>
+          <div style="color:#475569; font-size:11px; margin-top:2px;">Track (TRK-842) + Signal (SIG-119) + OHE (OHE-992)</div>
+          <div style="color:#d97706; font-family:'JetBrains Mono'; font-size:11px; font-weight:bold; margin-top:4px;">Window: 180 mins • 0 Conflicts</div>
+        </div>
+      `);
+
+      // Initialize Distinct Multi-Colored Moving Trains
+      initDistinctColoredTrains();
+    }
+
+    // 3 Unique Colors for Live Trains
+    function initDistinctColoredTrains() {
+      const trains = [
+        {
+          id: "12042",
+          name: "12042 Shatabdi",
+          dotColor: "#7c3aed",      // Vivid Purple
+          badgeBg: "#f3e8ff",
+          badgeBorder: "#a855f7",
+          textColor: "#6b21a8",
+          progress: 0.25,
+          speed: 0.0008
+        },
+        {
+          id: "22436",
+          name: "22436 Vande Bharat",
+          dotColor: "#0284c7",      // Electric Cyan / Blue
+          badgeBg: "#e0f2fe",
+          badgeBorder: "#38bdf8",
+          textColor: "#0369a1",
+          progress: 0.70,
+          speed: -0.0011
+        },
+        {
+          id: "G-8891",
+          name: "G-8891 Container Frt",
+          dotColor: "#059669",      // Vibrant Emerald Green
+          badgeBg: "#d1fae5",
+          badgeBorder: "#34d399",
+          textColor: "#065f46",
+          progress: 0.42,
+          speed: 0.0004
+        }
+      ];
+
+      function interpolateCoord(p) {
+        const totalSegments = CORRIDOR_COORDS.length - 1;
+        const scaled = Math.max(0, Math.min(1, p)) * totalSegments;
+        const idx = Math.floor(scaled);
+        const frac = scaled - idx;
+        if (idx >= totalSegments) return CORRIDOR_COORDS[totalSegments];
+        const p1 = CORRIDOR_COORDS[idx];
+        const p2 = CORRIDOR_COORDS[idx + 1];
+        return [
+          p1[0] + (p2[0] - p1[0]) * frac,
+          p1[1] + (p2[1] - p1[1]) * frac
+        ];
+      }
+
+      trains.forEach(t => {
+        const initialPos = interpolateCoord(t.progress);
+        const trainIcon = L.divIcon({
+          className: 'train-pulsing-icon',
+          html: `<div style="display:flex; align-items:center; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.25));">
+                   <div style="width:14px; height:14px; background:${t.dotColor}; border:2.5px solid #ffffff; border-radius:50%; box-shadow:0 0 8px ${t.dotColor};"></div>
+                   <span style="background:${t.badgeBg}; border:1.5px solid ${t.badgeBorder}; color:${t.textColor}; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; padding:2px 6px; border-radius:6px; white-space:nowrap; margin-left:6px;">${t.name}</span>
+                 </div>`,
+          iconSize: [140, 22],
+          iconAnchor: [7, 11]
+        });
+
+        const marker = L.marker(initialPos, { icon: trainIcon }).addTo(map);
+        marker.bindPopup(`
+          <div style="font-size:12px; font-family:'Inter',sans-serif; color:#0f172a;">
+            <strong style="color:${t.textColor}; font-size:13px;">${t.name}</strong><br/>
+            <span style="color:#475569; font-size:11px;">Track: UP Mainline (Electrified 25kV)</span><br/>
+            <span style="color:#16a34a; font-family:'JetBrains Mono'; font-size:11px; font-weight:bold;">Status: ON SCHEDULE (0 Conflicts)</span>
+          </div>
+        `);
+        trainMarkers.push({ marker, train: t });
+      });
+
+      // Smooth position update interval
+      setInterval(() => {
+        trainMarkers.forEach(tm => {
+          tm.train.progress += tm.train.speed;
+          if (tm.train.progress > 1) tm.train.progress = 0;
+          if (tm.train.progress < 0) tm.train.progress = 1;
+          const newPos = interpolateCoord(tm.train.progress);
+          tm.marker.setLatLng(newPos);
+        });
+      }, 100);
+    }
+
+    function resetMapView() {
+      if (map) map.flyTo([28.32, 77.77], 9, { duration: 1.2 });
+    }
+
+    // Render Backlog Tasks & Map Integration
+    function renderExplorerTasks(dept = 'ALL') {
+      const container = document.getElementById('task-backlog-container');
+      const allTasks = RailTwinEngine.getTasksByDept(dept);
+      document.getElementById('kpi-total-tasks').innerText = `${allTasks.length} Tasks`;
+
+      container.innerHTML = allTasks.map(t => {
+        let borderClass = 'border-primary';
+        let badgeBg = 'bg-primary-container text-on-primary-container';
+        if (t.status === 'CRITICAL') { borderClass = 'border-error'; badgeBg = 'bg-error text-on-error kpi-pulse'; }
+        else if (t.status === 'HIGH') { borderClass = 'border-tertiary'; badgeBg = 'bg-tertiary text-on-tertiary'; }
+
+        return `
+          <div onclick="focusTaskOnMap('${t.id}')" class="bg-surface-container-high rounded-xl p-3.5 shadow-sm flex flex-col gap-2 relative overflow-hidden group hover:shadow-md hover:border-primary/50 border border-outline-variant/5 transition-all cursor-pointer">
+            <div class="absolute left-0 top-0 bottom-0 w-1 ${t.status === 'CRITICAL' ? 'bg-error' : (t.status === 'HIGH' ? 'bg-tertiary' : 'bg-primary')}"></div>
+            <div class="flex justify-between items-start">
+              <div class="flex items-center gap-1.5">
+                <span class="font-data-mono text-xs text-on-surface-variant font-bold">${t.id}</span>
+                <span class="font-data-mono text-[9px] bg-surface-container-highest px-1.5 py-0.5 rounded text-outline">${t.source}</span>
+              </div>
+              <div class="${badgeBg} font-label-caps text-[10px] px-2 py-0.5 rounded uppercase font-bold">${t.status}</div>
+            </div>
+            <h3 class="font-body-base text-xs text-on-surface font-semibold leading-snug">${t.title}</h3>
+            <div class="flex items-center justify-between font-data-mono text-[10px] text-on-surface-variant pt-1 border-t border-outline-variant/10">
+              <span class="flex items-center gap-1 text-primary"><span class="material-symbols-outlined text-[12px]">location_on</span>${t.location}</span>
+              <span class="text-secondary font-bold">Priority: ${t.priorityScore}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterExplorerTasks(dept) {
+      document.querySelectorAll('.te-filter-btn').forEach(b => {
+        b.classList.remove('bg-primary', 'text-on-primary');
+        b.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+      });
+      event.target.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+      event.target.classList.add('bg-primary', 'text-on-primary');
+      renderExplorerTasks(dept);
+    }
+
+    function focusTaskOnMap(taskId) {
+      const task = RailTwinEngine.getTasks().find(t => t.id === taskId);
+      if (!task) return;
+
+      let coord = [28.5500, 77.5500]; // default Maripat-Dadri
+      if (task.location.includes("26.4")) coord = [28.6400, 77.4800];
+      else if (task.location.includes("12")) coord = [28.6692, 77.4538];
+      else if (task.location.includes("42")) coord = [28.5500, 77.5500];
+
+      if (map) {
+        map.flyTo(coord, 12, { duration: 1.0 });
+      }
+
+      inspectTask(taskId);
+    }
+
+    function inspectTask(taskId) {
+      const task = RailTwinEngine.getTasks().find(t => t.id === taskId);
+      if (!task) return;
+
+      const modal = document.getElementById('priority-modal');
+      document.getElementById('pm-title').innerText = `${task.id}: ${task.code} — Score Breakdown`;
+      document.getElementById('pm-content').innerHTML = `
+        <div class="bg-surface-container-lowest p-3 rounded-xl border border-primary/20 flex justify-between items-center">
+          <div>
+            <div class="font-bold text-on-surface text-sm">${task.title}</div>
+            <div class="text-[11px] text-on-surface-variant">${task.deptName} • ${task.source}</div>
+          </div>
+          <div class="text-right">
+            <span class="font-data-mono text-xl text-primary font-bold">${task.priorityScore}%</span>
+            <div class="text-[10px] text-outline uppercase font-data-mono">Final Priority</div>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2">
+          <div class="flex justify-between items-center">
+            <span class="text-on-surface">Asset Criticality (Weight 0.30):</span>
+            <span class="font-data-mono font-bold text-primary">${(task.criticality * 100).toFixed(0)}% → ${(0.30 * task.criticality * 100).toFixed(1)} pts</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-on-surface">Defect Severity (Weight 0.25):</span>
+            <span class="font-data-mono font-bold text-error">${(task.severity * 100).toFixed(0)}% → ${(0.25 * task.severity * 100).toFixed(1)} pts</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-on-surface">Urgency / Due Date (Weight 0.20):</span>
+            <span class="font-data-mono font-bold text-tertiary">${(task.urgency * 100).toFixed(0)}% → ${(0.20 * task.urgency * 100).toFixed(1)} pts</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-on-surface">Operational Impact (Weight 0.15):</span>
+            <span class="font-data-mono font-bold text-secondary">${(task.opImpact * 100).toFixed(0)}% → ${(0.15 * task.opImpact * 100).toFixed(1)} pts</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-on-surface">Failure History Risk (Weight 0.10):</span>
+            <span class="font-data-mono font-bold text-outline">${(task.failureRisk * 100).toFixed(0)}% → ${(0.10 * task.failureRisk * 100).toFixed(1)} pts</span>
+          </div>
+        </div>
+
+        <div class="bg-surface-container-high p-3 rounded-xl text-[11px] text-on-surface-variant flex items-center gap-2 mt-2">
+          <span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
+          <span>Safety Profile: <strong class="text-on-surface">${task.safetyProfile}</strong> (${task.blockType})</span>
+        </div>
+      `;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closePriorityModal() {
+      document.getElementById('priority-modal').classList.add('hidden');
+      document.getElementById('priority-modal').classList.remove('flex');
+    }
+
+    function doLogout() {
+      sessionStorage.removeItem('rt_auth');
+      try { localStorage.removeItem('rt_auth'); } catch(e) {}
+      window.location.href = 'login.html';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderExplorerTasks();
+      initMap();
+      const net = RailTwinEngine.getCurrentNetwork();
+      document.getElementById('te-zone').innerText = net.zone;
+      document.getElementById('te-div').innerText = net.division;
+      document.getElementById('te-section').innerText = net.section;
+
+      window.addEventListener('railtwin:backend_synced', () => {
+        renderExplorerTasks();
+      });
+    });
+  </script>
+<button id="sidebar-reopen-btn" onclick="toggleSidebar()" title="Open Sidebar">
+  <span class="material-symbols-outlined">menu</span> Menu
+</button>
+<script>
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-closed');
+}
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
