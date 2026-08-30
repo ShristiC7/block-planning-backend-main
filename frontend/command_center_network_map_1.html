@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <script>
@@ -629,12 +629,22 @@
       window.location.href = 'login.html';
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       initMainMap();
       const net = RailTwinEngine.getCurrentNetwork();
       document.getElementById('nm-zone').innerText = net.zone;
       document.getElementById('nm-div').innerText = net.division;
       document.getElementById('nm-section').innerText = net.section;
+
+      // Check live backend connection for corridor & section updates
+      try {
+        const corrRes = await RailTwinEngine.fetchBackendCorridor();
+        if (corrRes.success && corrRes.sections && corrRes.sections.length > 0) {
+          console.log("Live Railway Sections loaded from Render:", corrRes.sections);
+          const badge = document.querySelector('header .bg-surface-container span.text-label-caps');
+          if (badge) badge.innerText = `Render GIS Online (${corrRes.sections.length} Sections)`;
+        }
+      } catch(e) {}
     });
   </script>
 <button id="sidebar-reopen-btn" onclick="toggleSidebar()" title="Open Sidebar">

@@ -701,6 +701,18 @@ TSK-3001,OHE-501,TRD,Catenary Insulator High-Pressure Washing,KM 42.0 - 45.0,150
       }
     },
 
+    fetchBackendCorridor: async function() {
+      try {
+        const res = await fetch(`${API_BASE}/corridor`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        return { success: true, corridor: data.corridor, sections: data.sections };
+      } catch (err) {
+        console.warn("Backend /corridor fetch failed:", err);
+        return { success: false, error: err.message };
+      }
+    },
+
     fetchBackendBlockRequests: async function() {
       try {
         const res = await fetch(`${API_BASE}/block-requests`);
